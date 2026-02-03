@@ -1,1 +1,551 @@
-<h1>OLA</h1>
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bode Margin Challenge</title>
+  <style>
+    :root { --bg:#0b1020; --panel:#121a33; --text:#e9ecff; --muted:#aeb6e6; --ok:#66ff99; --warn:#ffd166; --bad:#ff5c7a; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
+    h1 { margin: 0 0 10px; font-size: 22px; }
+    .row { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 14px; }
+    .card { background: var(--panel); border-radius: 14px; padding: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    canvas { width: 100%; height: 520px; display:block; border-radius: 12px; background: rgba(255,255,255,.03); }
+    .controls { display:flex; flex-wrap:wrap; gap:10px; margin: 10px 0 0; }
+    button { cursor:pointer; border:0; border-radius: 12px; padding: 10px 12px; background: rgba(255,255,255,.08); color: var(--text); }
+    button:hover { background: rgba(255,255,255,.12); }
+    button.primary { background: rgba(102,255,153,.18); }
+    button.primary:hover { background: rgba(102,255,153,.26); }
+    button.danger { background: rgba(255,92,122,.18); }
+    button.danger:hover { background: rgba(255,92,122,.26); }
+    .pill { display:inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.07); color: var(--muted); font-size: 12px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .small { font-size: 13px; color: var(--muted); line-height: 1.35; }
+    .stat { margin: 10px 0 0; display:grid; gap:8px; }
+    .line { display:flex; justify-content:space-between; gap:10px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.05); }
+    .line b { color: var(--text); }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .bad { color: var(--bad); }
+    .divider { height:1px; background: rgba(255,255,255,.08); margin: 10px 0; }
+    .hint { margin-top: 10px; padding: 10px; border-radius: 12px; background: rgba(255,255,255,.05); }
+    .kbd { border:1px solid rgba(255,255,255,.2); padding: 1px 6px; border-radius: 8px; font-size: 12px; }
+    a { color: var(--text); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎮 Bode Margin Challenge <span class="pill">Controlo de Sistemas</span></h1>
+
+  <div class="row">
+    <div class="card">
+      <canvas id="cv" width="1100" height="520"></canvas>
+      <div class="controls">
+        <button id="btnGc" class="primary">Marcar ωgc (0 dB)</button>
+        <button id="btnPc" class="primary">Marcar ωpc (−180°)</button>
+        <button id="btnReveal">Mostrar solução</button>
+        <button id="btnNew" class="primary">Novo sistema</button>
+        <button id="btnReset" class="danger">Repor tentativas</button>
+      </div>
+      <div class="hint small">
+        <b>Como jogar:</b> Clica primeiro em <span class="kbd">Marcar ωgc</span> e depois no gráfico de <b>magnitude</b> onde cruza <b>0 dB</b>.
+        Depois usa <span class="kbd">Marcar ωpc</span> e clica no gráfico de <b>fase</b> onde cruza <b>−180°</b>. Ganha pontos pela proximidade.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="small">
+        <b>Função de transferência (malha aberta):</b><br/>
+        <span id="tf" class="mono"></span>
+        <div class="divider"></div>
+        <b>Definições:</b><br/>
+        <span class="mono">PM = 180° + ∠L(jωgc)</span><br/>
+        <span class="mono">GM(dB) = −|L(jωpc)|<sub>dB</sub></span>
+      </div>
+
+      <div class="stat">
+        <div class="line"><span>Pontuação</span><b id="score" class="ok">0</b></div>
+        <div class="line"><span>Modo</span><b id="mode" class="warn">—</b></div>
+        <div class="line"><span>ωgc (teu)</span><b id="ugc" class="mono">—</b></div>
+        <div class="line"><span>PM (do teu ωgc)</span><b id="upm" class="mono">—</b></div>
+        <div class="line"><span>ωpc (teu)</span><b id="upc" class="mono">—</b></div>
+        <div class="line"><span>GM(dB) (do teu ωpc)</span><b id="ugm" class="mono">—</b></div>
+
+        <div class="divider"></div>
+
+        <div class="line"><span>ωgc (real)</span><b id="rgc" class="mono">—</b></div>
+        <div class="line"><span>PM (real)</span><b id="rpm" class="mono">—</b></div>
+        <div class="line"><span>ωpc (real)</span><b id="rpc" class="mono">—</b></div>
+        <div class="line"><span>GM(dB) (real)</span><b id="rgm" class="mono">—</b></div>
+
+        <div class="divider"></div>
+        <div class="small">
+          <b>Objetivo pedagógico:</b> treinar leitura de Bode e cálculo de margens (ganho/fase) em malha aberta.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ------------------ utilitários numéricos (complexos) ------------------ */
+function C(re, im){ return {re, im}; }
+function cAdd(a,b){ return C(a.re+b.re, a.im+b.im); }
+function cMul(a,b){ return C(a.re*b.re - a.im*b.im, a.re*b.im + a.im*b.re); }
+function cAbs(a){ return Math.hypot(a.re, a.im); }
+function cArgDeg(a){ return Math.atan2(a.im, a.re) * 180/Math.PI; }
+
+function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
+function log10(x){ return Math.log(x)/Math.LN10; }
+function pow10(x){ return Math.pow(10,x); }
+function fmt(x, digits=3){
+  if (!isFinite(x)) return "—";
+  const ax = Math.abs(x);
+  if (ax === 0) return "0";
+  if (ax < 0.001 || ax >= 1000) return x.toExponential(2);
+  return x.toFixed(digits);
+}
+function fmtDeg(x){ return isFinite(x) ? `${x.toFixed(1)}°` : "—"; }
+function fmtDb(x){ return isFinite(x) ? `${x.toFixed(1)} dB` : "—"; }
+
+/* ------------------ sistema (L(s)) e bode ------------------ */
+/*
+  Escolha didática: L(s) = K*(1 + s/wz) / Π_{i=1..4}(1 + s/wpi)
+  -> 4 polos, 1 zero  => fase final ~ -270°, garante cruzamento -180° em geral.
+*/
+function evalLjw(sys, w){
+  const jw = C(0, w);
+  // (1 + j w / wb)
+  function onePlusJwOver(wb){
+    return C(1, w/wb);
+  }
+  let num = onePlusJwOver(sys.wz);
+  let den = C(1,0);
+  for (const wp of sys.wps){
+    den = cMul(den, onePlusJwOver(wp));
+  }
+  // K * num / den  (divisão: num * conj(den) / |den|^2)
+  const denAbs2 = den.re*den.re + den.im*den.im;
+  const denConj = C(den.re, -den.im);
+  const frac = cMul(num, denConj);
+  const out = C(sys.K * frac.re/denAbs2, sys.K * frac.im/denAbs2);
+  return out;
+}
+
+function bode(sys, wArr){
+  const magDb = [];
+  const phDeg = [];
+  for (const w of wArr){
+    const L = evalLjw(sys,w);
+    const mag = cAbs(L);
+    magDb.push(20*Math.log10(mag));
+    phDeg.push(cArgDeg(L));
+  }
+  // unwrap fase para evitar saltos +-360
+  const un = [phDeg[0]];
+  for (let i=1;i<phDeg.length;i++){
+    let p = phDeg[i];
+    let prev = un[i-1];
+    while (p - prev > 180) p -= 360;
+    while (p - prev < -180) p += 360;
+    un.push(p);
+  }
+  return {magDb, phDegUnwrap: un};
+}
+
+function logspace(wmin, wmax, n){
+  const a = log10(wmin), b = log10(wmax);
+  const out = [];
+  for (let i=0;i<n;i++){
+    const t = i/(n-1);
+    out.push(pow10(a + (b-a)*t));
+  }
+  return out;
+}
+
+function findCrossingLogX(xArr, yArr, target){
+  // procura cruzamento y = target entre pontos consecutivos
+  for (let i=0;i<yArr.length-1;i++){
+    const y1 = yArr[i], y2 = yArr[i+1];
+    if (!isFinite(y1) || !isFinite(y2)) continue;
+    if ((y1-target) === 0) return {x:xArr[i], i};
+    if ((y1-target)*(y2-target) <= 0){ // mudou sinal
+      const t = (target - y1) / (y2 - y1);
+      // interpolação em escala log (frequência)
+      const x1 = xArr[i], x2 = xArr[i+1];
+      const lx = log10(x1) + (log10(x2)-log10(x1))*t;
+      return {x: pow10(lx), i, t};
+    }
+  }
+  return null;
+}
+
+function phaseAt(sys, w){
+  const p = cArgDeg(evalLjw(sys,w));
+  return p;
+}
+function magDbAt(sys, w){
+  const m = cAbs(evalLjw(sys,w));
+  return 20*Math.log10(m);
+}
+
+function adjustPhaseToUnwrap(p, ref){
+  // ajusta p (em [-180,180]) para ficar próximo de ref (unwrap)
+  while (p - ref > 180) p -= 360;
+  while (p - ref < -180) p += 360;
+  return p;
+}
+
+/* ------------------ geração de sistemas aleatórios ------------------ */
+function rand(a,b){ return a + Math.random()*(b-a); }
+function jitterFactor(db){ return Math.pow(10, rand(-db, db)/20); }
+
+function generateSystem(){
+  // base em décadas diferentes
+  const base = pow10(rand(-1, 1)); // 0.1 a 10
+  let wps = [
+    base * pow10(0.0) * jitterFactor(1.5),
+    base * pow10(0.7) * jitterFactor(1.5),
+    base * pow10(1.4) * jitterFactor(1.5),
+    base * pow10(2.1) * jitterFactor(1.5),
+  ].sort((a,b)=>a-b);
+
+  // zero algures entre o 1º e 3º polo (para mexer na fase/magnitude)
+  const wz = wps[1] * pow10(rand(-0.3, 0.6));
+
+  // escolher K para ter cruzamento de 0 dB numa zona “boa”
+  // Ajusta K para que |L(j1)| ~ 1 (0 dB), com variação pequena.
+  const magDbAt1 = magDbAt({K:1, wz, wps}, 1);
+  let K = Math.pow(10, (-magDbAt1)/20) * jitterFactor(6); // +-6 dB
+
+  return {K, wz, wps};
+}
+
+function tfString(sys){
+  const K = fmt(sys.K,3);
+  const wz = fmt(sys.wz,3);
+  const poles = sys.wps.map(w=>`(1 + s/${fmt(w,3)})`).join(" ");
+  return `L(s) = ${K} · (1 + s/${wz}) / [ ${poles} ]`;
+}
+
+/* ------------------ desenho ------------------ */
+const cv = document.getElementById("cv");
+const ctx = cv.getContext("2d");
+
+function dprFix(){
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = cv.clientWidth;
+  const cssH = cv.clientHeight;
+  cv.width = Math.floor(cssW * dpr);
+  cv.height = Math.floor(cssH * dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize", ()=>{ dprFix(); draw(); });
+
+function drawText(x,y,txt,alpha=1){
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.fillText(txt,x,y);
+  ctx.restore();
+}
+
+function draw(){
+  if (!state) return;
+  const {wArr, magDb, ph, sys} = state;
+
+  // layout: topo magnitude, baixo fase
+  const W = cv.clientWidth, H = cv.clientHeight;
+  ctx.clearRect(0,0,W,H);
+
+  const padL = 58, padR = 16, padT = 22, padB = 22;
+  const mid = Math.floor(H*0.52);
+  const rectMag = {x:padL, y:padT, w:W-padL-padR, h:mid-padT-10};
+  const rectPh  = {x:padL, y:mid+10, w:W-padL-padR, h:H-(mid+10)-padB};
+
+  const lxMin = log10(wArr[0]), lxMax = log10(wArr[wArr.length-1]);
+  function xOfW(w, rect){
+    const lx = log10(w);
+    return rect.x + (lx - lxMin)/(lxMax-lxMin)*rect.w;
+  }
+
+  // ranges fixos "didáticos"
+  const magMin = Math.floor((Math.min(...magDb)-10)/20)*20;
+  const magMax = Math.ceil((Math.max(...magDb)+10)/20)*20;
+  const phMin = -360, phMax = 0;
+
+  function yOfMag(m){
+    return rectMag.y + (magMax - m)/(magMax-magMin)*rectMag.h;
+  }
+  function yOfPh(p){
+    return rectPh.y + (phMax - p)/(phMax-phMin)*rectPh.h;
+  }
+
+  // estilos
+  ctx.font = "13px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.strokeStyle = "rgba(255,255,255,.14)";
+  ctx.fillStyle = "rgba(255,255,255,.85)";
+
+  // eixos + grelha por décadas
+  function decadeLines(rect){
+    const d0 = Math.ceil(lxMin), d1 = Math.floor(lxMax);
+    for (let d=d0; d<=d1; d++){
+      const w = pow10(d);
+      const x = xOfW(w, rect);
+      ctx.beginPath(); ctx.moveTo(x, rect.y); ctx.lineTo(x, rect.y+rect.h); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.fillText(`10^${d}`, x-14, rect.y+rect.h+16);
+      ctx.fillStyle = "rgba(255,255,255,.85)";
+    }
+  }
+
+  // caixas
+  ctx.strokeStyle = "rgba(255,255,255,.20)";
+  ctx.strokeRect(rectMag.x, rectMag.y, rectMag.w, rectMag.h);
+  ctx.strokeRect(rectPh.x, rectPh.y, rectPh.w, rectPh.h);
+
+  // labels
+  ctx.fillText("Magnitude (dB)", rectMag.x, rectMag.y-6);
+  ctx.fillText("Fase (graus)", rectPh.x, rectPh.y-6);
+
+  ctx.strokeStyle = "rgba(255,255,255,.10)";
+  decadeLines(rectMag);
+  decadeLines(rectPh);
+
+  // linhas horizontais (magnitude)
+  ctx.strokeStyle = "rgba(255,255,255,.10)";
+  for (let m=magMin; m<=magMax; m+=20){
+    const y = yOfMag(m);
+    ctx.beginPath(); ctx.moveTo(rectMag.x, y); ctx.lineTo(rectMag.x+rectMag.w, y); ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,.55)";
+    ctx.fillText(`${m}`, 8, y+4);
+    ctx.fillStyle="rgba(255,255,255,.85)";
+  }
+  // linha 0 dB destacada
+  ctx.strokeStyle = "rgba(102,255,153,.35)";
+  const y0 = yOfMag(0);
+  ctx.beginPath(); ctx.moveTo(rectMag.x, y0); ctx.lineTo(rectMag.x+rectMag.w, y0); ctx.stroke();
+
+  // linhas horizontais (fase)
+  ctx.strokeStyle = "rgba(255,255,255,.10)";
+  for (let p=phMin; p<=phMax; p+=60){
+    const y = yOfPh(p);
+    ctx.beginPath(); ctx.moveTo(rectPh.x, y); ctx.lineTo(rectPh.x+rectPh.w, y); ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,.55)";
+    ctx.fillText(`${p}`, 8, y+4);
+    ctx.fillStyle="rgba(255,255,255,.85)";
+  }
+  // linha -180 destacada
+  ctx.strokeStyle = "rgba(255,209,102,.35)";
+  const y180 = yOfPh(-180);
+  ctx.beginPath(); ctx.moveTo(rectPh.x, y180); ctx.lineTo(rectPh.x+rectPh.w, y180); ctx.stroke();
+
+  // traçar curvas
+  function plot(rect, yFunc, dataY){
+    ctx.strokeStyle = "rgba(233,236,255,.88)";
+    ctx.beginPath();
+    for (let i=0;i<wArr.length;i++){
+      const x = xOfW(wArr[i], rect);
+      const y = yFunc(dataY[i]);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  plot(rectMag, yOfMag, magDb);
+  plot(rectPh, yOfPh, ph);
+
+  // marcar seleção do utilizador
+  function drawMarker(w, rect, label, yLine=null, color="rgba(255,255,255,.85)"){
+    if (!isFinite(w)) return;
+    const x = xOfW(w, rect);
+    ctx.strokeStyle = color;
+    ctx.beginPath(); ctx.moveTo(x, rect.y); ctx.lineTo(x, rect.y+rect.h); ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fillText(label, x+6, rect.y+14);
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+  }
+  if (state.userWgc) drawMarker(state.userWgc, rectMag, "teu ωgc", null, "rgba(102,255,153,.85)");
+  if (state.userWpc) drawMarker(state.userWpc, rectPh, "teu ωpc", null, "rgba(255,209,102,.85)");
+
+  // solução (se ativada)
+  if (state.reveal){
+    drawMarker(state.wgcReal, rectMag, "ωgc real", null, "rgba(102,255,153,.55)");
+    drawMarker(state.wpcReal, rectPh, "ωpc real", null, "rgba(255,209,102,.55)");
+  }
+}
+
+/* ------------------ estado e lógica do jogo ------------------ */
+let state = null;
+let mode = null; // "gc" | "pc" | null
+let score = 0;
+
+const elTf = document.getElementById("tf");
+const elScore = document.getElementById("score");
+const elMode  = document.getElementById("mode");
+const elUgc = document.getElementById("ugc");
+const elUpm = document.getElementById("upm");
+const elUpc = document.getElementById("upc");
+const elUgm = document.getElementById("ugm");
+const elRgc = document.getElementById("rgc");
+const elRpm = document.getElementById("rpm");
+const elRpc = document.getElementById("rpc");
+const elRgm = document.getElementById("rgm");
+
+function setMode(m){
+  mode = m;
+  elMode.textContent = m === "gc" ? "Marcar ωgc" : (m === "pc" ? "Marcar ωpc" : "—");
+}
+
+function resetAttempts(){
+  state.userWgc = null;
+  state.userWpc = null;
+  setMode(null);
+  elUgc.textContent = "—";
+  elUpm.textContent = "—";
+  elUpc.textContent = "—";
+  elUgm.textContent = "—";
+  draw();
+}
+
+function updateScore(delta){
+  score += Math.round(delta);
+  score = Math.max(0, score);
+  elScore.textContent = score;
+}
+
+function scoringByLogError(wUser, wTrue){
+  const e = Math.abs(log10(wUser/wTrue));  // erro em décadas
+  // 0 décadas = perfeito. 0.1 décadas ~ 26% de erro.
+  const pts = 120 * Math.exp(-e*7); // decai rápido
+  return pts;
+}
+
+function newGame(){
+  const sys = generateSystem();
+  const wArr = logspace(1e-2, 1e4, 520);
+  const {magDb, phDegUnwrap} = bode(sys, wArr);
+
+  // cruzamentos reais
+  const gc = findCrossingLogX(wArr, magDb, 0);
+  const pc = findCrossingLogX(wArr, phDegUnwrap, -180);
+
+  // se algum cruzamento falhar (raro), tenta outro sistema
+  if (!gc || !pc){
+    return newGame();
+  }
+
+  // fase em ωgc (ajustada ao unwrap)
+  const phRaw = phaseAt(sys, gc.x);
+  const phAdj = adjustPhaseToUnwrap(phRaw, phDegUnwrap[gc.i]);
+
+  const PM = 180 + phAdj;
+  const magAtPc = magDbAt(sys, pc.x);
+  const GM = -magAtPc;
+
+  state = {
+    sys, wArr, magDb, ph: phDegUnwrap,
+    wgcReal: gc.x, wpcReal: pc.x,
+    PMReal: PM, GMReal: GM,
+    userWgc: null, userWpc: null,
+    reveal: false
+  };
+
+  elTf.textContent = tfString(sys);
+  elRgc.textContent = `${fmt(state.wgcReal,3)} rad/s`;
+  elRpm.textContent = fmtDeg(state.PMReal);
+  elRpc.textContent = `${fmt(state.wpcReal,3)} rad/s`;
+  elRgm.textContent = fmtDb(state.GMReal);
+
+  score = 0; elScore.textContent = "0";
+  resetAttempts();
+  state.reveal = false;
+  dprFix();
+  draw();
+}
+
+function freqFromClickX(clientX){
+  const rect = cv.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const W = rect.width;
+  const padL = 58, padR = 16;
+  const plotW = W - padL - padR;
+  const lxMin = log10(state.wArr[0]), lxMax = log10(state.wArr[state.wArr.length-1]);
+  const t = clamp((x - padL) / plotW, 0, 1);
+  return pow10(lxMin + (lxMax - lxMin)*t);
+}
+
+function inWhichPlot(clientY){
+  const rect = cv.getBoundingClientRect();
+  const y = clientY - rect.top;
+  const H = rect.height;
+  const mid = Math.floor(H*0.52);
+  if (y < mid) return "mag";
+  return "ph";
+}
+
+cv.addEventListener("click", (e)=>{
+  if (!state || !mode) return;
+
+  const which = inWhichPlot(e.clientY);
+  if (mode === "gc" && which !== "mag") return;
+  if (mode === "pc" && which !== "ph") return;
+
+  const w = freqFromClickX(e.clientX);
+
+  if (mode === "gc"){
+    state.userWgc = w;
+
+    // PM baseado no ωgc do utilizador
+    // para referência unwrap: usamos o ponto mais próximo
+    let nearest = 0;
+    let best = Infinity;
+    for (let i=0;i<state.wArr.length;i++){
+      const d = Math.abs(log10(state.wArr[i]) - log10(w));
+      if (d < best){ best = d; nearest = i; }
+    }
+    const phRaw = phaseAt(state.sys, w);
+    const phAdj = adjustPhaseToUnwrap(phRaw, state.ph[nearest]);
+    const PMu = 180 + phAdj;
+
+    elUgc.textContent = `${fmt(w,3)} rad/s`;
+    elUpm.textContent = fmtDeg(PMu);
+
+    const pts = scoringByLogError(w, state.wgcReal);
+    updateScore(pts);
+
+    setMode(null);
+  }
+
+  if (mode === "pc"){
+    state.userWpc = w;
+
+    const mag = magDbAt(state.sys, w);
+    const GMu = -mag;
+
+    elUpc.textContent = `${fmt(w,3)} rad/s`;
+    elUgm.textContent = fmtDb(GMu);
+
+    const pts = scoringByLogError(w, state.wpcReal);
+    updateScore(pts);
+
+    setMode(null);
+  }
+
+  draw();
+});
+
+document.getElementById("btnGc").addEventListener("click", ()=> setMode("gc"));
+document.getElementById("btnPc").addEventListener("click", ()=> setMode("pc"));
+document.getElementById("btnReveal").addEventListener("click", ()=>{
+  if (!state) return;
+  state.reveal = !state.reveal;
+  draw();
+});
+document.getElementById("btnNew").addEventListener("click", ()=> newGame());
+document.getElementById("btnReset").addEventListener("click", ()=> resetAttempts());
+
+// iniciar
+newGame();
+</script>
+</body>
+</html>
+
