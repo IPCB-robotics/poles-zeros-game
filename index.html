@@ -2,550 +2,727 @@
 <html lang="pt">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bode Margin Challenge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Jogo: Pólos e Zeros no Plano-s</title>
   <style>
-    :root { --bg:#0b1020; --panel:#121a33; --text:#e9ecff; --muted:#aeb6e6; --ok:#66ff99; --warn:#ffd166; --bad:#ff5c7a; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
-    h1 { margin: 0 0 10px; font-size: 22px; }
-    .row { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 14px; }
-    .card { background: var(--panel); border-radius: 14px; padding: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
-    canvas { width: 100%; height: 520px; display:block; border-radius: 12px; background: rgba(255,255,255,.03); }
-    .controls { display:flex; flex-wrap:wrap; gap:10px; margin: 10px 0 0; }
-    button { cursor:pointer; border:0; border-radius: 12px; padding: 10px 12px; background: rgba(255,255,255,.08); color: var(--text); }
-    button:hover { background: rgba(255,255,255,.12); }
-    button.primary { background: rgba(102,255,153,.18); }
-    button.primary:hover { background: rgba(102,255,153,.26); }
-    button.danger { background: rgba(255,92,122,.18); }
-    button.danger:hover { background: rgba(255,92,122,.26); }
-    .pill { display:inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.07); color: var(--muted); font-size: 12px; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    .small { font-size: 13px; color: var(--muted); line-height: 1.35; }
-    .stat { margin: 10px 0 0; display:grid; gap:8px; }
-    .line { display:flex; justify-content:space-between; gap:10px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.05); }
-    .line b { color: var(--text); }
-    .ok { color: var(--ok); }
-    .warn { color: var(--warn); }
-    .bad { color: var(--bad); }
-    .divider { height:1px; background: rgba(255,255,255,.08); margin: 10px 0; }
-    .hint { margin-top: 10px; padding: 10px; border-radius: 12px; background: rgba(255,255,255,.05); }
-    .kbd { border:1px solid rgba(255,255,255,.2); padding: 1px 6px; border-radius: 8px; font-size: 12px; }
-    a { color: var(--text); }
+    :root { --bg:#0b0e14; --panel:#121827; --text:#e7eefc; --muted:#a9b7d0; --accent:#7aa2ff; --ok:#4ade80; --bad:#fb7185; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 18px; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; }
+    .card { background: var(--panel); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+    h1 { font-size: 18px; margin: 0 0 10px; }
+    h2 { font-size: 14px; margin: 0 0 10px; color: var(--muted); font-weight: 600; letter-spacing: .2px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn:hover { border-color: rgba(122,162,255,0.55); }
+    .btn.primary { background: rgba(122,162,255,0.18); border-color: rgba(122,162,255,0.35); }
+    .btn.tool { min-width: 120px; text-align: center; }
+    .btn.on { outline: 2px solid rgba(122,162,255,0.7); }
+    .btn.good { background: rgba(74,222,128,0.14); border-color: rgba(74,222,128,0.35); }
+    .btn.bad { background: rgba(251,113,133,0.14); border-color: rgba(251,113,133,0.35); }
+    select, input[type="checkbox"] { accent-color: var(--accent); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .H { font-size: 14px; line-height: 1.45; padding: 10px; border-radius: 12px; background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08); }
+    canvas { width: 100%; height: auto; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.10); }
+    .small { font-size: 12px; color: var(--muted); }
+    .status { padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); }
+    .status.ok { border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.08); }
+    .status.bad { border-color: rgba(251,113,133,0.35); background: rgba(251,113,133,0.08); }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.10); font-size: 12px; color: var(--muted); }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hr { height: 1px; background: rgba(255,255,255,0.08); margin: 12px 0; }
+    @media (max-width: 980px) { .wrap { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>🎮 Bode Margin Challenge <span class="pill">Controlo de Sistemas</span></h1>
-
-  <div class="row">
+  <div class="wrap">
     <div class="card">
-      <canvas id="cv" width="1100" height="520"></canvas>
-      <div class="controls">
-        <button id="btnGc" class="primary">Marcar ωgc (0 dB)</button>
-        <button id="btnPc" class="primary">Marcar ωpc (−180°)</button>
-        <button id="btnReveal">Mostrar solução</button>
-        <button id="btnNew" class="primary">Novo sistema</button>
-        <button id="btnReset" class="danger">Repor tentativas</button>
+      <h1>Jogo: Colocar Pólos e Zeros no Plano-s</h1>
+      <div class="row">
+        <label class="pill">Nível
+          <select id="levelSel">
+            <option value="1">Nível 1 — raízes reais</option>
+            <option value="2">Nível 2 — inclui par complexo conjugado</option>
+            <option value="3">Nível 3 — inclui multiplicidade</option>
+          </select>
+        </label>
+        <button class="btn primary" id="newBtn">Nova H(s)</button>
+        <button class="btn" id="resetBtn">Limpar marcações</button>
+        <button class="btn" id="undoBtn">Desfazer</button>
+        <label class="pill">
+          <input type="checkbox" id="teacherMode"> modo professor (mostrar solução)
+        </label>
       </div>
-      <div class="hint small">
-        <b>Como jogar:</b> Clica primeiro em <span class="kbd">Marcar ωgc</span> e depois no gráfico de <b>magnitude</b> onde cruza <b>0 dB</b>.
-        Depois usa <span class="kbd">Marcar ωpc</span> e clica no gráfico de <b>fase</b> onde cruza <b>−180°</b>. Ganha pontos pela proximidade.
+
+      <div class="hr"></div>
+
+      <h2>Função de transferência (já fatorizada)</h2>
+      <div class="H mono" id="Hdisp"></div>
+      <p class="small">
+        Dica: zeros vêm do numerador e pólos do denominador. Em sistemas contínuos, estabilidade BIBO exige
+        <b>todos os pólos</b> com <b>Re(s) &lt; 0</b> (sem pólos no eixo imaginário).
+      </p>
+
+      <div class="hr"></div>
+
+      <h2>Plano-s</h2>
+      <canvas id="c" width="900" height="560" aria-label="Plano-s"></canvas>
+
+      <div class="row" style="margin-top:10px;">
+        <button class="btn tool on" id="toolZero">Ferramenta: Zero (○)</button>
+        <button class="btn tool" id="toolPole">Ferramenta: Pólo (×)</button>
+        <span class="pill" id="countPill">zeros: 0/0 · pólos: 0/0</span>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <button class="btn primary" id="checkBtn">Verificar colocação</button>
+        <span class="small">Tolerância: ±0.35 em Re/Im</span>
+      </div>
+
+      <div id="placeFeedback" class="status" style="margin-top:10px;">
+        Coloca as marcações clicando no plano-s. (No nível 1, a parte imaginária é forçada a 0.)
+      </div>
+
+      <div class="hr"></div>
+
+      <h2>Pergunta de estabilidade (após verificar)</h2>
+      <div class="row">
+        <button class="btn" id="stabYes" disabled>Sim, é estável</button>
+        <button class="btn" id="stabNo" disabled>Não, é instável</button>
+      </div>
+      <div id="stabFeedback" class="status" style="margin-top:10px;">
+        Primeiro verifica a colocação. Depois responde à estabilidade.
       </div>
     </div>
 
     <div class="card">
-      <div class="small">
-        <b>Função de transferência (malha aberta):</b><br/>
-        <span id="tf" class="mono"></span>
-        <div class="divider"></div>
-        <b>Definições:</b><br/>
-        <span class="mono">PM = 180° + ∠L(jωgc)</span><br/>
-        <span class="mono">GM(dB) = −|L(jωpc)|<sub>dB</sub></span>
+      <h2>Objetivo pedagógico</h2>
+      <p class="small">
+        Treinar o “vai-e-vem” entre a expressão fatorizada e a interpretação geométrica no plano-s:
+        <b>ler raízes → mapear pontos → inferir estabilidade pelos pólos</b>.
+      </p>
+
+      <div class="grid2">
+        <div class="status">
+          <b>Nível 1</b><br>
+          <span class="small">Associação direta entre fatores lineares reais e pontos no eixo real.</span>
+        </div>
+        <div class="status">
+          <b>Nível 2</b><br>
+          <span class="small">Reconhecimento de pares conjugados e simetria relativamente ao eixo real.</span>
+        </div>
+        <div class="status">
+          <b>Nível 3</b><br>
+          <span class="small">Multiplicidade: duas marcações no mesmo ponto (impacto em dinâmica/ordem).</span>
+        </div>
       </div>
 
-      <div class="stat">
-        <div class="line"><span>Pontuação</span><b id="score" class="ok">0</b></div>
-        <div class="line"><span>Modo</span><b id="mode" class="warn">—</b></div>
-        <div class="line"><span>ωgc (teu)</span><b id="ugc" class="mono">—</b></div>
-        <div class="line"><span>PM (do teu ωgc)</span><b id="upm" class="mono">—</b></div>
-        <div class="line"><span>ωpc (teu)</span><b id="upc" class="mono">—</b></div>
-        <div class="line"><span>GM(dB) (do teu ωpc)</span><b id="ugm" class="mono">—</b></div>
+      <div class="hr"></div>
 
-        <div class="divider"></div>
+      <h2>Como o jogo avalia</h2>
+      <ul class="small">
+        <li>Confere se o aluno colocou o <b>número certo</b> de zeros e pólos.</li>
+        <li>Faz “matching” por proximidade (tolerância ±0.35).</li>
+        <li>Depois pergunta estabilidade: <b>Re(pólo)&lt;0</b> para todos.</li>
+      </ul>
 
-        <div class="line"><span>ωgc (real)</span><b id="rgc" class="mono">—</b></div>
-        <div class="line"><span>PM (real)</span><b id="rpm" class="mono">—</b></div>
-        <div class="line"><span>ωpc (real)</span><b id="rpc" class="mono">—</b></div>
-        <div class="line"><span>GM(dB) (real)</span><b id="rgm" class="mono">—</b></div>
+      <div class="hr"></div>
 
-        <div class="divider"></div>
-        <div class="small">
-          <b>Objetivo pedagógico:</b> treinar leitura de Bode e cálculo de margens (ganho/fase) em malha aberta.
-        </div>
+      <h2>Extensões rápidas (se quiseres)</h2>
+      <ul class="small">
+        <li>Adicionar resposta em frequência (Bode) e ligar “pólos perto do eixo jω” a ressonâncias.</li>
+        <li>Adicionar modo discreto (plano-z) com critério do círculo unitário.</li>
+        <li>Adicionar “raízes no eixo imaginário” para discutir estabilidade marginal.</li>
+      </ul>
+
+      <div class="hr"></div>
+
+      <div class="status">
+        <b>Nota</b><br>
+        <span class="small">
+          A estabilidade aqui é a BIBO para sistemas contínuos com H(s) racional.
+          Para modelos com cancelamentos “perfeitos” ou não-mínima fase, há nuances, mas para um jogo introdutório
+          este critério é o mais didático.
+        </span>
       </div>
     </div>
   </div>
-</div>
 
 <script>
-/* ------------------ utilitários numéricos (complexos) ------------------ */
-function C(re, im){ return {re, im}; }
-function cAdd(a,b){ return C(a.re+b.re, a.im+b.im); }
-function cMul(a,b){ return C(a.re*b.re - a.im*b.im, a.re*b.im + a.im*b.re); }
-function cAbs(a){ return Math.hypot(a.re, a.im); }
-function cArgDeg(a){ return Math.atan2(a.im, a.re) * 180/Math.PI; }
+(() => {
+  // =========================
+  // Config do "plano-s"
+  // =========================
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
 
-function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
-function log10(x){ return Math.log(x)/Math.LN10; }
-function pow10(x){ return Math.pow(10,x); }
-function fmt(x, digits=3){
-  if (!isFinite(x)) return "—";
-  const ax = Math.abs(x);
-  if (ax === 0) return "0";
-  if (ax < 0.001 || ax >= 1000) return x.toExponential(2);
-  return x.toFixed(digits);
-}
-function fmtDeg(x){ return isFinite(x) ? `${x.toFixed(1)}°` : "—"; }
-function fmtDb(x){ return isFinite(x) ? `${x.toFixed(1)} dB` : "—"; }
+  // Janela do plano-s (Re e Im)
+  const VIEW = { xmin: -8, xmax: 8, ymin: -6, ymax: 6 };
+  const TOL = 0.35;
 
-/* ------------------ sistema (L(s)) e bode ------------------ */
-/*
-  Escolha didática: L(s) = K*(1 + s/wz) / Π_{i=1..4}(1 + s/wpi)
-  -> 4 polos, 1 zero  => fase final ~ -270°, garante cruzamento -180° em geral.
-*/
-function evalLjw(sys, w){
-  const jw = C(0, w);
-  // (1 + j w / wb)
-  function onePlusJwOver(wb){
-    return C(1, w/wb);
-  }
-  let num = onePlusJwOver(sys.wz);
-  let den = C(1,0);
-  for (const wp of sys.wps){
-    den = cMul(den, onePlusJwOver(wp));
-  }
-  // K * num / den  (divisão: num * conj(den) / |den|^2)
-  const denAbs2 = den.re*den.re + den.im*den.im;
-  const denConj = C(den.re, -den.im);
-  const frac = cMul(num, denConj);
-  const out = C(sys.K * frac.re/denAbs2, sys.K * frac.im/denAbs2);
-  return out;
-}
+  const levelSel = document.getElementById('levelSel');
+  const Hdisp = document.getElementById('Hdisp');
+  const countPill = document.getElementById('countPill');
 
-function bode(sys, wArr){
-  const magDb = [];
-  const phDeg = [];
-  for (const w of wArr){
-    const L = evalLjw(sys,w);
-    const mag = cAbs(L);
-    magDb.push(20*Math.log10(mag));
-    phDeg.push(cArgDeg(L));
-  }
-  // unwrap fase para evitar saltos +-360
-  const un = [phDeg[0]];
-  for (let i=1;i<phDeg.length;i++){
-    let p = phDeg[i];
-    let prev = un[i-1];
-    while (p - prev > 180) p -= 360;
-    while (p - prev < -180) p += 360;
-    un.push(p);
-  }
-  return {magDb, phDegUnwrap: un};
-}
+  const newBtn = document.getElementById('newBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const checkBtn = document.getElementById('checkBtn');
 
-function logspace(wmin, wmax, n){
-  const a = log10(wmin), b = log10(wmax);
-  const out = [];
-  for (let i=0;i<n;i++){
-    const t = i/(n-1);
-    out.push(pow10(a + (b-a)*t));
-  }
-  return out;
-}
+  const toolZero = document.getElementById('toolZero');
+  const toolPole = document.getElementById('toolPole');
 
-function findCrossingLogX(xArr, yArr, target){
-  // procura cruzamento y = target entre pontos consecutivos
-  for (let i=0;i<yArr.length-1;i++){
-    const y1 = yArr[i], y2 = yArr[i+1];
-    if (!isFinite(y1) || !isFinite(y2)) continue;
-    if ((y1-target) === 0) return {x:xArr[i], i};
-    if ((y1-target)*(y2-target) <= 0){ // mudou sinal
-      const t = (target - y1) / (y2 - y1);
-      // interpolação em escala log (frequência)
-      const x1 = xArr[i], x2 = xArr[i+1];
-      const lx = log10(x1) + (log10(x2)-log10(x1))*t;
-      return {x: pow10(lx), i, t};
-    }
-  }
-  return null;
-}
+  const placeFeedback = document.getElementById('placeFeedback');
+  const stabYes = document.getElementById('stabYes');
+  const stabNo = document.getElementById('stabNo');
+  const stabFeedback = document.getElementById('stabFeedback');
 
-function phaseAt(sys, w){
-  const p = cArgDeg(evalLjw(sys,w));
-  return p;
-}
-function magDbAt(sys, w){
-  const m = cAbs(evalLjw(sys,w));
-  return 20*Math.log10(m);
-}
+  const teacherMode = document.getElementById('teacherMode');
 
-function adjustPhaseToUnwrap(p, ref){
-  // ajusta p (em [-180,180]) para ficar próximo de ref (unwrap)
-  while (p - ref > 180) p -= 360;
-  while (p - ref < -180) p += 360;
-  return p;
-}
+  let tool = 'zero'; // 'zero' | 'pole'
 
-/* ------------------ geração de sistemas aleatórios ------------------ */
-function rand(a,b){ return a + Math.random()*(b-a); }
-function jitterFactor(db){ return Math.pow(10, rand(-db, db)/20); }
+  // Estado do exercício
+  let expectedZeros = []; // [{re, im}]
+  let expectedPoles = []; // [{re, im}]
+  let userZeros = [];
+  let userPoles = [];
+  let lastPlacedStack = []; // para undo: {type, idx}
 
-function generateSystem(){
-  // base em décadas diferentes
-  const base = pow10(rand(-1, 1)); // 0.1 a 10
-  let wps = [
-    base * pow10(0.0) * jitterFactor(1.5),
-    base * pow10(0.7) * jitterFactor(1.5),
-    base * pow10(1.4) * jitterFactor(1.5),
-    base * pow10(2.1) * jitterFactor(1.5),
-  ].sort((a,b)=>a-b);
+  let verifiedPlacement = false;
+  let systemIsStable = null;
 
-  // zero algures entre o 1º e 3º polo (para mexer na fase/magnitude)
-  const wz = wps[1] * pow10(rand(-0.3, 0.6));
+  // =========================
+  // Utilitários
+  // =========================
+  const rnd = (a,b) => a + Math.random()*(b-a);
+  const choice = arr => arr[Math.floor(Math.random()*arr.length)];
+  const nearly = (a,b,eps) => Math.abs(a-b) <= eps;
 
-  // escolher K para ter cruzamento de 0 dB numa zona “boa”
-  // Ajusta K para que |L(j1)| ~ 1 (0 dB), com variação pequena.
-  const magDbAt1 = magDbAt({K:1, wz, wps}, 1);
-  let K = Math.pow(10, (-magDbAt1)/20) * jitterFactor(6); // +-6 dB
-
-  return {K, wz, wps};
-}
-
-function tfString(sys){
-  const K = fmt(sys.K,3);
-  const wz = fmt(sys.wz,3);
-  const poles = sys.wps.map(w=>`(1 + s/${fmt(w,3)})`).join(" ");
-  return `L(s) = ${K} · (1 + s/${wz}) / [ ${poles} ]`;
-}
-
-/* ------------------ desenho ------------------ */
-const cv = document.getElementById("cv");
-const ctx = cv.getContext("2d");
-
-function dprFix(){
-  const dpr = window.devicePixelRatio || 1;
-  const cssW = cv.clientWidth;
-  const cssH = cv.clientHeight;
-  cv.width = Math.floor(cssW * dpr);
-  cv.height = Math.floor(cssH * dpr);
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-}
-window.addEventListener("resize", ()=>{ dprFix(); draw(); });
-
-function drawText(x,y,txt,alpha=1){
-  ctx.save(); ctx.globalAlpha = alpha;
-  ctx.fillText(txt,x,y);
-  ctx.restore();
-}
-
-function draw(){
-  if (!state) return;
-  const {wArr, magDb, ph, sys} = state;
-
-  // layout: topo magnitude, baixo fase
-  const W = cv.clientWidth, H = cv.clientHeight;
-  ctx.clearRect(0,0,W,H);
-
-  const padL = 58, padR = 16, padT = 22, padB = 22;
-  const mid = Math.floor(H*0.52);
-  const rectMag = {x:padL, y:padT, w:W-padL-padR, h:mid-padT-10};
-  const rectPh  = {x:padL, y:mid+10, w:W-padL-padR, h:H-(mid+10)-padB};
-
-  const lxMin = log10(wArr[0]), lxMax = log10(wArr[wArr.length-1]);
-  function xOfW(w, rect){
-    const lx = log10(w);
-    return rect.x + (lx - lxMin)/(lxMax-lxMin)*rect.w;
+  function toCanvas(re, im) {
+    const x = (re - VIEW.xmin) / (VIEW.xmax - VIEW.xmin) * canvas.width;
+    const y = (VIEW.ymax - im) / (VIEW.ymax - VIEW.ymin) * canvas.height;
+    return {x,y};
   }
 
-  // ranges fixos "didáticos"
-  const magMin = Math.floor((Math.min(...magDb)-10)/20)*20;
-  const magMax = Math.ceil((Math.max(...magDb)+10)/20)*20;
-  const phMin = -360, phMax = 0;
-
-  function yOfMag(m){
-    return rectMag.y + (magMax - m)/(magMax-magMin)*rectMag.h;
-  }
-  function yOfPh(p){
-    return rectPh.y + (phMax - p)/(phMax-phMin)*rectPh.h;
+  function toPlane(px, py) {
+    const re = VIEW.xmin + (px / canvas.width) * (VIEW.xmax - VIEW.xmin);
+    const im = VIEW.ymax - (py / canvas.height) * (VIEW.ymax - VIEW.ymin);
+    return {re, im};
   }
 
-  // estilos
-  ctx.font = "13px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.strokeStyle = "rgba(255,255,255,.14)";
-  ctx.fillStyle = "rgba(255,255,255,.85)";
+  function fmtNum(x) {
+    // Formato simples e legível
+    const r = Math.round(x*100)/100;
+    return (r >= 0 ? r.toString() : r.toString());
+  }
 
-  // eixos + grelha por décadas
-  function decadeLines(rect){
-    const d0 = Math.ceil(lxMin), d1 = Math.floor(lxMax);
-    for (let d=d0; d<=d1; d++){
-      const w = pow10(d);
-      const x = xOfW(w, rect);
-      ctx.beginPath(); ctx.moveTo(x, rect.y); ctx.lineTo(x, rect.y+rect.h); ctx.stroke();
-      ctx.fillStyle = "rgba(255,255,255,.55)";
-      ctx.fillText(`10^${d}`, x-14, rect.y+rect.h+16);
-      ctx.fillStyle = "rgba(255,255,255,.85)";
+  function fmtFactor(root) {
+    const {re, im} = root;
+    // (s - (a + jb)) e (s - r) para real
+    if (Math.abs(im) < 1e-9) {
+      // (s - re) => (s + |re|) se re negativo
+      if (re < 0) return `(s + ${fmtNum(Math.abs(re))})`;
+      if (re > 0) return `(s - ${fmtNum(re)})`;
+      return `(s)`; // evitamos gerar 0, mas por segurança
+    } else {
+      const sign = im >= 0 ? '+' : '-';
+      return `(s - (${fmtNum(re)} ${sign} j${fmtNum(Math.abs(im))}))`;
     }
   }
 
-  // caixas
-  ctx.strokeStyle = "rgba(255,255,255,.20)";
-  ctx.strokeRect(rectMag.x, rectMag.y, rectMag.w, rectMag.h);
-  ctx.strokeRect(rectPh.x, rectPh.y, rectPh.w, rectPh.h);
-
-  // labels
-  ctx.fillText("Magnitude (dB)", rectMag.x, rectMag.y-6);
-  ctx.fillText("Fase (graus)", rectPh.x, rectPh.y-6);
-
-  ctx.strokeStyle = "rgba(255,255,255,.10)";
-  decadeLines(rectMag);
-  decadeLines(rectPh);
-
-  // linhas horizontais (magnitude)
-  ctx.strokeStyle = "rgba(255,255,255,.10)";
-  for (let m=magMin; m<=magMax; m+=20){
-    const y = yOfMag(m);
-    ctx.beginPath(); ctx.moveTo(rectMag.x, y); ctx.lineTo(rectMag.x+rectMag.w, y); ctx.stroke();
-    ctx.fillStyle="rgba(255,255,255,.55)";
-    ctx.fillText(`${m}`, 8, y+4);
-    ctx.fillStyle="rgba(255,255,255,.85)";
+  function buildFactorString(K, zeros, poles) {
+    // zeros/poles vêm como lista COM multiplicidade (repetições)
+    const num = zeros.length ? zeros.map(fmtFactor).join('') : '1';
+    const den = poles.length ? poles.map(fmtFactor).join('') : '1';
+    return `H(s) = ${fmtNum(K)} · ${num} / ${den}`;
   }
-  // linha 0 dB destacada
-  ctx.strokeStyle = "rgba(102,255,153,.35)";
-  const y0 = yOfMag(0);
-  ctx.beginPath(); ctx.moveTo(rectMag.x, y0); ctx.lineTo(rectMag.x+rectMag.w, y0); ctx.stroke();
 
-  // linhas horizontais (fase)
-  ctx.strokeStyle = "rgba(255,255,255,.10)";
-  for (let p=phMin; p<=phMax; p+=60){
-    const y = yOfPh(p);
-    ctx.beginPath(); ctx.moveTo(rectPh.x, y); ctx.lineTo(rectPh.x+rectPh.w, y); ctx.stroke();
-    ctx.fillStyle="rgba(255,255,255,.55)";
-    ctx.fillText(`${p}`, 8, y+4);
-    ctx.fillStyle="rgba(255,255,255,.85)";
+  function setTool(next) {
+    tool = next;
+    toolZero.classList.toggle('on', tool==='zero');
+    toolPole.classList.toggle('on', tool==='pole');
   }
-  // linha -180 destacada
-  ctx.strokeStyle = "rgba(255,209,102,.35)";
-  const y180 = yOfPh(-180);
-  ctx.beginPath(); ctx.moveTo(rectPh.x, y180); ctx.lineTo(rectPh.x+rectPh.w, y180); ctx.stroke();
 
-  // traçar curvas
-  function plot(rect, yFunc, dataY){
-    ctx.strokeStyle = "rgba(233,236,255,.88)";
+  function updateCounts() {
+    countPill.textContent = `zeros: ${userZeros.length}/${expectedZeros.length} · pólos: ${userPoles.length}/${expectedPoles.length}`;
+  }
+
+  function clearPlacementUI() {
+    verifiedPlacement = false;
+    stabYes.disabled = true;
+    stabNo.disabled = true;
+    placeFeedback.className = 'status';
+    placeFeedback.textContent = 'Coloca as marcações clicando no plano-s. (No nível 1, a parte imaginária é forçada a 0.)';
+    stabFeedback.className = 'status';
+    stabFeedback.textContent = 'Primeiro verifica a colocação. Depois responde à estabilidade.';
+  }
+
+  // =========================
+  // Geração de exercícios
+  // =========================
+  function genRealRoot(allowNearZero=false) {
+    // Evitar valores demasiado perto de 0 para não confundir com eixo
+    let r;
+    do {
+      r = Math.round(rnd(-6, 6) * 2) / 2; // passos de 0.5
+    } while (!allowNearZero && Math.abs(r) < 0.6);
+    return {re: r, im: 0};
+  }
+
+  function genComplexPair() {
+    // a pode ser negativo ou positivo; b sempre >0
+    let a;
+    do { a = Math.round(rnd(-4.5, 4.5)*2)/2; } while (Math.abs(a) < 0.6);
+    const b = Math.round(rnd(1.0, 4.0)*2)/2;
+    return [{re:a, im:b}, {re:a, im:-b}];
+  }
+
+  function generateSystem(level) {
+    // reset arrays
+    expectedZeros = [];
+    expectedPoles = [];
+
+    // Ganho simples
+    const K = choice([0.5, 1, 2, 3]);
+
+    // Escolhas típicas: mais pólos que zeros
+    if (level === 1) {
+      const np = choice([2,3,4]);
+      const nz = choice([1,2, Math.max(1, np-2)]);
+      const poles = [];
+      const zeros = [];
+      // gerar pólos reais (alguns podem cair em Re>0 para instabilidade)
+      for (let i=0;i<np;i++) poles.push(genRealRoot());
+      for (let i=0;i<nz;i++) zeros.push(genRealRoot(true));
+      expectedPoles = poles;
+      expectedZeros = zeros;
+      return {K};
+    }
+
+    if (level === 2) {
+      // incluir um par complexo conjugado (nos pólos ou zeros)
+      const complexIn = choice(['poles','zeros']);
+      const poles = [];
+      const zeros = [];
+
+      // 1 par complexo
+      const pair = genComplexPair();
+      if (complexIn === 'poles') poles.push(...pair);
+      else zeros.push(...pair);
+
+      // completar com raízes reais
+      const np = choice([3,4,5]); // contando o par como 2
+      const nz = choice([1,2,3]);
+      while (poles.length < np) poles.push(genRealRoot());
+      while (zeros.length < nz) zeros.push(genRealRoot(true));
+
+      expectedPoles = poles;
+      expectedZeros = zeros;
+      return {K};
+    }
+
+    // level 3: multiplicidade (pólo duplo e/ou zero duplo)
+    if (level === 3) {
+      const poles = [];
+      const zeros = [];
+
+      // incluir pelo menos um elemento duplo
+      const doubleType = choice(['pole','zero','both']);
+
+      // Base: pode incluir também um par conjugado para enriquecer
+      const includeComplex = Math.random() < 0.6;
+      if (includeComplex) {
+        // garantir conjugado nos pólos para reforçar ligação a estabilidade
+        poles.push(...genComplexPair());
+      }
+
+      // Pólos reais base
+      const baseNp = choice([3,4,5]); // incluindo complexos (2)
+      while (poles.length < baseNp) poles.push(genRealRoot());
+
+      // Zeros base
+      const baseNz = choice([2,3]);
+      while (zeros.length < baseNz) zeros.push(genRealRoot(true));
+
+      // aplicar multiplicidade
+      if (doubleType === 'pole' || doubleType === 'both') {
+        const rp = genRealRoot();
+        poles.push(rp); poles.push(rp); // duplicar no mesmo ponto
+      }
+      if (doubleType === 'zero' || doubleType === 'both') {
+        const rz = genRealRoot(true);
+        zeros.push(rz); zeros.push(rz);
+      }
+
+      expectedPoles = poles;
+      expectedZeros = zeros;
+      return {K};
+    }
+  }
+
+  // =========================
+  // Estabilidade (contínuo)
+  // =========================
+  function computeStability() {
+    // Critério BIBO: todos os pólos com Re < 0
+    for (const p of expectedPoles) {
+      if (!(p.re < 0)) return false;
+    }
+    return true;
+  }
+
+  // =========================
+  // Matching / verificação
+  // =========================
+  function matchSets(expected, actual) {
+    // expected e actual: arrays de {re, im}
+    // devolve {ok:boolean, unmatchedExpected, unmatchedActual}
+    const used = new Array(actual.length).fill(false);
+    const unmatchedExpected = [];
+
+    for (const e of expected) {
+      let bestIdx = -1;
+      let bestD = Infinity;
+      for (let i=0;i<actual.length;i++) {
+        if (used[i]) continue;
+        const a = actual[i];
+        const d = Math.hypot(e.re - a.re, e.im - a.im);
+        if (d < bestD) { bestD = d; bestIdx = i; }
+      }
+      if (bestIdx >= 0 && bestD <= TOL) {
+        used[bestIdx] = true;
+      } else {
+        unmatchedExpected.push(e);
+      }
+    }
+
+    const unmatchedActual = [];
+    for (let i=0;i<actual.length;i++) if (!used[i]) unmatchedActual.push(actual[i]);
+
+    return {
+      ok: unmatchedExpected.length === 0 && unmatchedActual.length === 0,
+      unmatchedExpected,
+      unmatchedActual
+    };
+  }
+
+  function verifyPlacement() {
+    const mz = matchSets(expectedZeros, userZeros);
+    const mp = matchSets(expectedPoles, userPoles);
+
+    const rightCount = (userZeros.length === expectedZeros.length) && (userPoles.length === expectedPoles.length);
+
+    if (!rightCount) {
+      verifiedPlacement = false;
+      placeFeedback.className = 'status bad';
+      placeFeedback.textContent = `Ainda não. Tens de colocar exatamente ${expectedZeros.length} zeros e ${expectedPoles.length} pólos.`;
+      stabYes.disabled = true;
+      stabNo.disabled = true;
+      draw();
+      return;
+    }
+
+    if (mz.ok && mp.ok) {
+      verifiedPlacement = true;
+      placeFeedback.className = 'status ok';
+      placeFeedback.textContent = '✅ Colocação correta! Agora responde: o sistema é estável?';
+      stabYes.disabled = false;
+      stabNo.disabled = false;
+      systemIsStable = computeStability();
+    } else {
+      verifiedPlacement = false;
+      placeFeedback.className = 'status bad';
+      placeFeedback.textContent = '❌ Há marcações deslocadas (ou duplicações em falta). Ajusta e tenta outra vez.';
+      stabYes.disabled = true;
+      stabNo.disabled = true;
+    }
+
+    draw();
+  }
+
+  // =========================
+  // Desenho
+  // =========================
+  function drawGrid() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Fundo
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // Grelha
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+
+    const xStep = 1;
+    const yStep = 1;
+
+    for (let x = Math.ceil(VIEW.xmin); x <= VIEW.xmax; x += xStep) {
+      const p1 = toCanvas(x, VIEW.ymin);
+      const p2 = toCanvas(x, VIEW.ymax);
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+    }
+
+    for (let y = Math.ceil(VIEW.ymin); y <= VIEW.ymax; y += yStep) {
+      const p1 = toCanvas(VIEW.xmin, y);
+      const p2 = toCanvas(VIEW.xmax, y);
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+    }
+
+    // Eixos
+    ctx.strokeStyle = 'rgba(122,162,255,0.55)';
+    ctx.lineWidth = 2;
+
+    const xAxis1 = toCanvas(VIEW.xmin, 0);
+    const xAxis2 = toCanvas(VIEW.xmax, 0);
     ctx.beginPath();
-    for (let i=0;i<wArr.length;i++){
-      const x = xOfW(wArr[i], rect);
-      const y = yFunc(dataY[i]);
-      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    }
+    ctx.moveTo(xAxis1.x, xAxis1.y);
+    ctx.lineTo(xAxis2.x, xAxis2.y);
     ctx.stroke();
-  }
-  plot(rectMag, yOfMag, magDb);
-  plot(rectPh, yOfPh, ph);
 
-  // marcar seleção do utilizador
-  function drawMarker(w, rect, label, yLine=null, color="rgba(255,255,255,.85)"){
-    if (!isFinite(w)) return;
-    const x = xOfW(w, rect);
-    ctx.strokeStyle = color;
-    ctx.beginPath(); ctx.moveTo(x, rect.y); ctx.lineTo(x, rect.y+rect.h); ctx.stroke();
-    ctx.fillStyle = color;
-    ctx.fillText(label, x+6, rect.y+14);
-    ctx.fillStyle = "rgba(255,255,255,.85)";
-  }
-  if (state.userWgc) drawMarker(state.userWgc, rectMag, "teu ωgc", null, "rgba(102,255,153,.85)");
-  if (state.userWpc) drawMarker(state.userWpc, rectPh, "teu ωpc", null, "rgba(255,209,102,.85)");
+    const yAxis1 = toCanvas(0, VIEW.ymin);
+    const yAxis2 = toCanvas(0, VIEW.ymax);
+    ctx.beginPath();
+    ctx.moveTo(yAxis1.x, yAxis1.y);
+    ctx.lineTo(yAxis2.x, yAxis2.y);
+    ctx.stroke();
 
-  // solução (se ativada)
-  if (state.reveal){
-    drawMarker(state.wgcReal, rectMag, "ωgc real", null, "rgba(102,255,153,.55)");
-    drawMarker(state.wpcReal, rectPh, "ωpc real", null, "rgba(255,209,102,.55)");
-  }
-}
-
-/* ------------------ estado e lógica do jogo ------------------ */
-let state = null;
-let mode = null; // "gc" | "pc" | null
-let score = 0;
-
-const elTf = document.getElementById("tf");
-const elScore = document.getElementById("score");
-const elMode  = document.getElementById("mode");
-const elUgc = document.getElementById("ugc");
-const elUpm = document.getElementById("upm");
-const elUpc = document.getElementById("upc");
-const elUgm = document.getElementById("ugm");
-const elRgc = document.getElementById("rgc");
-const elRpm = document.getElementById("rpm");
-const elRpc = document.getElementById("rpc");
-const elRgm = document.getElementById("rgm");
-
-function setMode(m){
-  mode = m;
-  elMode.textContent = m === "gc" ? "Marcar ωgc" : (m === "pc" ? "Marcar ωpc" : "—");
-}
-
-function resetAttempts(){
-  state.userWgc = null;
-  state.userWpc = null;
-  setMode(null);
-  elUgc.textContent = "—";
-  elUpm.textContent = "—";
-  elUpc.textContent = "—";
-  elUgm.textContent = "—";
-  draw();
-}
-
-function updateScore(delta){
-  score += Math.round(delta);
-  score = Math.max(0, score);
-  elScore.textContent = score;
-}
-
-function scoringByLogError(wUser, wTrue){
-  const e = Math.abs(log10(wUser/wTrue));  // erro em décadas
-  // 0 décadas = perfeito. 0.1 décadas ~ 26% de erro.
-  const pts = 120 * Math.exp(-e*7); // decai rápido
-  return pts;
-}
-
-function newGame(){
-  const sys = generateSystem();
-  const wArr = logspace(1e-2, 1e4, 520);
-  const {magDb, phDegUnwrap} = bode(sys, wArr);
-
-  // cruzamentos reais
-  const gc = findCrossingLogX(wArr, magDb, 0);
-  const pc = findCrossingLogX(wArr, phDegUnwrap, -180);
-
-  // se algum cruzamento falhar (raro), tenta outro sistema
-  if (!gc || !pc){
-    return newGame();
+    // Labels básicos
+    ctx.fillStyle = 'rgba(231,238,252,0.9)';
+    ctx.font = '14px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+    ctx.fillText('Re(s)', canvas.width - 70, xAxis2.y - 8);
+    ctx.fillText('Im(s)', yAxis2.x + 8, 20);
   }
 
-  // fase em ωgc (ajustada ao unwrap)
-  const phRaw = phaseAt(sys, gc.x);
-  const phAdj = adjustPhaseToUnwrap(phRaw, phDegUnwrap[gc.i]);
+  function drawZero(pt, double=false, alpha=1) {
+    const {x,y} = toCanvas(pt.re, pt.im);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = 'rgba(231,238,252,0.95)';
+    ctx.lineWidth = 3;
 
-  const PM = 180 + phAdj;
-  const magAtPc = magDbAt(sys, pc.x);
-  const GM = -magAtPc;
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI*2);
+    ctx.stroke();
 
-  state = {
-    sys, wArr, magDb, ph: phDegUnwrap,
-    wgcReal: gc.x, wpcReal: pc.x,
-    PMReal: PM, GMReal: GM,
-    userWgc: null, userWpc: null,
-    reveal: false
-  };
-
-  elTf.textContent = tfString(sys);
-  elRgc.textContent = `${fmt(state.wgcReal,3)} rad/s`;
-  elRpm.textContent = fmtDeg(state.PMReal);
-  elRpc.textContent = `${fmt(state.wpcReal,3)} rad/s`;
-  elRgm.textContent = fmtDb(state.GMReal);
-
-  score = 0; elScore.textContent = "0";
-  resetAttempts();
-  state.reveal = false;
-  dprFix();
-  draw();
-}
-
-function freqFromClickX(clientX){
-  const rect = cv.getBoundingClientRect();
-  const x = clientX - rect.left;
-  const W = rect.width;
-  const padL = 58, padR = 16;
-  const plotW = W - padL - padR;
-  const lxMin = log10(state.wArr[0]), lxMax = log10(state.wArr[state.wArr.length-1]);
-  const t = clamp((x - padL) / plotW, 0, 1);
-  return pow10(lxMin + (lxMax - lxMin)*t);
-}
-
-function inWhichPlot(clientY){
-  const rect = cv.getBoundingClientRect();
-  const y = clientY - rect.top;
-  const H = rect.height;
-  const mid = Math.floor(H*0.52);
-  if (y < mid) return "mag";
-  return "ph";
-}
-
-cv.addEventListener("click", (e)=>{
-  if (!state || !mode) return;
-
-  const which = inWhichPlot(e.clientY);
-  if (mode === "gc" && which !== "mag") return;
-  if (mode === "pc" && which !== "ph") return;
-
-  const w = freqFromClickX(e.clientX);
-
-  if (mode === "gc"){
-    state.userWgc = w;
-
-    // PM baseado no ωgc do utilizador
-    // para referência unwrap: usamos o ponto mais próximo
-    let nearest = 0;
-    let best = Infinity;
-    for (let i=0;i<state.wArr.length;i++){
-      const d = Math.abs(log10(state.wArr[i]) - log10(w));
-      if (d < best){ best = d; nearest = i; }
+    if (double) {
+      ctx.beginPath();
+      ctx.arc(x, y, 15, 0, Math.PI*2);
+      ctx.stroke();
     }
-    const phRaw = phaseAt(state.sys, w);
-    const phAdj = adjustPhaseToUnwrap(phRaw, state.ph[nearest]);
-    const PMu = 180 + phAdj;
 
-    elUgc.textContent = `${fmt(w,3)} rad/s`;
-    elUpm.textContent = fmtDeg(PMu);
-
-    const pts = scoringByLogError(w, state.wgcReal);
-    updateScore(pts);
-
-    setMode(null);
+    ctx.restore();
   }
 
-  if (mode === "pc"){
-    state.userWpc = w;
+  function drawPole(pt, double=false, alpha=1) {
+    const {x,y} = toCanvas(pt.re, pt.im);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = 'rgba(231,238,252,0.95)';
+    ctx.lineWidth = 3;
 
-    const mag = magDbAt(state.sys, w);
-    const GMu = -mag;
+    const r = 10;
+    ctx.beginPath();
+    ctx.moveTo(x-r, y-r);
+    ctx.lineTo(x+r, y+r);
+    ctx.moveTo(x-r, y+r);
+    ctx.lineTo(x+r, y-r);
+    ctx.stroke();
 
-    elUpc.textContent = `${fmt(w,3)} rad/s`;
-    elUgm.textContent = fmtDb(GMu);
+    if (double) {
+      const r2 = 15;
+      ctx.beginPath();
+      ctx.moveTo(x-r2, y-r2);
+      ctx.lineTo(x+r2, y+r2);
+      ctx.moveTo(x-r2, y+r2);
+      ctx.lineTo(x+r2, y-r2);
+      ctx.stroke();
+    }
 
-    const pts = scoringByLogError(w, state.wpcReal);
-    updateScore(pts);
-
-    setMode(null);
+    ctx.restore();
   }
 
-  draw();
-});
+  function multiplicityMap(arr) {
+    // devolve map "re,im" -> count
+    const m = new Map();
+    for (const p of arr) {
+      const k = `${Math.round(p.re*100)/100},${Math.round(p.im*100)/100}`;
+      m.set(k, (m.get(k)||0) + 1);
+    }
+    return m;
+  }
 
-document.getElementById("btnGc").addEventListener("click", ()=> setMode("gc"));
-document.getElementById("btnPc").addEventListener("click", ()=> setMode("pc"));
-document.getElementById("btnReveal").addEventListener("click", ()=>{
-  if (!state) return;
-  state.reveal = !state.reveal;
-  draw();
-});
-document.getElementById("btnNew").addEventListener("click", ()=> newGame());
-document.getElementById("btnReset").addEventListener("click", ()=> resetAttempts());
+  function draw() {
+    drawGrid();
 
-// iniciar
-newGame();
+    // Desenhar marcações do utilizador
+    const zMap = multiplicityMap(userZeros);
+    const pMap = multiplicityMap(userPoles);
+
+    // Para desenhar "duplo" quando repetido no mesmo ponto
+    for (const [k, count] of zMap.entries()) {
+      const [re, im] = k.split(',').map(Number);
+      drawZero({re, im}, count>=2, 1);
+      if (count > 2) {
+        // desenhar extra como texto pequeno
+        const {x,y} = toCanvas(re, im);
+        ctx.fillStyle = 'rgba(231,238,252,0.85)';
+        ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+        ctx.fillText(`×${count}`, x+16, y-12);
+      }
+    }
+    for (const [k, count] of pMap.entries()) {
+      const [re, im] = k.split(',').map(Number);
+      drawPole({re, im}, count>=2, 1);
+      if (count > 2) {
+        const {x,y} = toCanvas(re, im);
+        ctx.fillStyle = 'rgba(231,238,252,0.85)';
+        ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+        ctx.fillText(`×${count}`, x+16, y-12);
+      }
+    }
+
+    // Modo professor: desenhar solução a baixa opacidade
+    if (teacherMode.checked) {
+      const ezMap = multiplicityMap(expectedZeros);
+      const epMap = multiplicityMap(expectedPoles);
+
+      for (const [k, count] of ezMap.entries()) {
+        const [re, im] = k.split(',').map(Number);
+        drawZero({re, im}, count>=2, 0.25);
+      }
+      for (const [k, count] of epMap.entries()) {
+        const [re, im] = k.split(',').map(Number);
+        drawPole({re, im}, count>=2, 0.25);
+      }
+    }
+  }
+
+  // =========================
+  // Interação do utilizador
+  // =========================
+  canvas.addEventListener('click', (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const px = (ev.clientX - rect.left) * (canvas.width / rect.width);
+    const py = (ev.clientY - rect.top) * (canvas.height / rect.height);
+    let {re, im} = toPlane(px, py);
+
+    // Nível 1: forçar Im = 0
+    if (Number(levelSel.value) === 1) im = 0;
+
+    // arredondar ligeiramente para evitar ruído e facilitar correspondência
+    re = Math.round(re*100)/100;
+    im = Math.round(im*100)/100;
+
+    if (tool === 'zero') {
+      if (userZeros.length >= expectedZeros.length) {
+        placeFeedback.className = 'status bad';
+        placeFeedback.textContent = 'Já colocaste o número máximo de zeros para este exercício.';
+        return;
+      }
+      userZeros.push({re, im});
+      lastPlacedStack.push({type:'zero'});
+    } else {
+      if (userPoles.length >= expectedPoles.length) {
+        placeFeedback.className = 'status bad';
+        placeFeedback.textContent = 'Já colocaste o número máximo de pólos para este exercício.';
+        return;
+      }
+      userPoles.push({re, im});
+      lastPlacedStack.push({type:'pole'});
+    }
+
+    clearPlacementUI();
+    updateCounts();
+    draw();
+  });
+
+  toolZero.addEventListener('click', () => setTool('zero'));
+  toolPole.addEventListener('click', () => setTool('pole'));
+
+  undoBtn.addEventListener('click', () => {
+    const last = lastPlacedStack.pop();
+    if (!last) return;
+    if (last.type === 'zero') userZeros.pop();
+    else userPoles.pop();
+    clearPlacementUI();
+    updateCounts();
+    draw();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    userZeros = [];
+    userPoles = [];
+    lastPlacedStack = [];
+    clearPlacementUI();
+    updateCounts();
+    draw();
+  });
+
+  checkBtn.addEventListener('click', verifyPlacement);
+
+  stabYes.addEventListener('click', () => answerStability(true));
+  stabNo.addEventListener('click', () => answerStability(false));
+
+  function answerStability(userAnswer) {
+    if (!verifiedPlacement) return;
+
+    const correct = (userAnswer === systemIsStable);
+    if (correct) {
+      stabFeedback.className = 'status ok';
+      stabFeedback.textContent = `✅ Correto. Critério usado: estável ⇔ todos os pólos têm Re(s) < 0.`;
+      stabYes.classList.toggle('good', userAnswer===true);
+      stabNo.classList.toggle('good', userAnswer===false);
+      stabYes.classList.remove('bad'); stabNo.classList.remove('bad');
+    } else {
+      stabFeedback.className = 'status bad';
+      const why = systemIsStable
+        ? 'Na verdade é estável porque todos os pólos estão no semiplano esquerdo.'
+        : 'Na verdade é instável porque existe pelo menos um pólo com Re(s) ≥ 0.';
+      stabFeedback.textContent = `❌ Incorreto. ${why}`;
+      if (userAnswer) { stabYes.classList.add('bad'); stabNo.classList.remove('bad'); }
+      else { stabNo.classList.add('bad'); stabYes.classList.remove('bad'); }
+    }
+  }
+
+  teacherMode.addEventListener('change', draw);
+
+  function newExercise() {
+    userZeros = [];
+    userPoles = [];
+    lastPlacedStack = [];
+    clearPlacementUI();
+
+    const lvl = Number(levelSel.value);
+    const {K} = generateSystem(lvl);
+
+    Hdisp.textContent = buildFactorString(K, expectedZeros, expectedPoles);
+    updateCounts();
+    draw();
+  }
+
+  newBtn.addEventListener('click', newExercise);
+  levelSel.addEventListener('change', newExercise);
+
+  // init
+  setTool('zero');
+  newExercise();
+})();
 </script>
 </body>
 </html>
-
